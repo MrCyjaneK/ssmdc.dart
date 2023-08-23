@@ -6,6 +6,7 @@ import 'package:p3p/src/database/drift.dart' as db;
 
 import 'package:path/path.dart' as p;
 import 'package:ssmdc/db/filedatabase.dart';
+import 'package:ssmdc/handlers/groupinfo.dart';
 
 const passpharse = 'passpharse';
 
@@ -24,7 +25,8 @@ class P3pSSMDC {
   });
   P3p p3p;
   FileDatabase ssmdcdb;
-  static Future<P3pSSMDC> createGroup(String fileStorePath) async {
+  static Future<P3pSSMDC> createGroup(String fileStorePath,
+      {required bool scheduleTasks, required bool listen}) async {
     final storedPgp = File(p.join(fileStorePath, 'privkey.pgp'));
     if (!await storedPgp.exists()) {
       await storedPgp.create(recursive: true);
@@ -33,13 +35,14 @@ class P3pSSMDC {
     }
     // create client session
     final p3p = await P3p.createSession(
-      fileStorePath,
-      await storedPgp.readAsString(),
-      'passpharse',
-      db.DatabaseImplDrift(
-        dbFolder: p.join(fileStorePath, 'db-drift'),
-      ),
-    );
+        fileStorePath,
+        await storedPgp.readAsString(),
+        'passpharse',
+        db.DatabaseImplDrift(
+            dbFolder: p.join(fileStorePath, 'db-drift'),
+            singularFileStore: true),
+        scheduleTasks: scheduleTasks,
+        listen: listen);
     final p3pssmdc = P3pSSMDC(
       p3p: p3p,
       ssmdcdb: FileDatabase(
@@ -53,14 +56,10 @@ class P3pSSMDC {
   }
 
   Future<List<UserInfo>> getGroupMembers() async {
-    print("getGroupMembers: 0");
     final List<dynamic> members = await ssmdcdb.get('members') ?? [];
-    print("getGroupMembers: 1");
     final ret = <UserInfo>[];
     for (var elm in members) {
-      print("getGroupMembers: a");
       ret.add((await p3p.db.getUserInfo(fingerprint: elm.toString()))!);
-      print("getGroupMembers: b");
     }
     return ret;
   }
@@ -76,15 +75,17 @@ class P3pSSMDC {
   }
 
   Future<void> sendToAll(Event evt) async {
-    print('sendToAll - start');
     final users = await getGroupMembers();
-    print('sendToAll - ${users.length}');
     for (var ui in users) {
       await ui.addEvent(p3p, evt);
     }
   }
 
+  final handlers = [handlerCore];
+
   Future<bool> eventCallback(P3p p3p, Event evt, UserInfo ui) async {
+    if (ui.publicKey.fingerprint ==
+        (await p3p.getSelfInfo()).publicKey.fingerprint) return true;
     print('[ssmdc]: ${ui.id}. ${ui.name} event: ${evt.eventType}');
     // p3p.sendMessage(ui, 'okokokok');
     switch (evt.eventType) {
@@ -110,15 +111,23 @@ class P3pSSMDC {
         }
         return false; // We want to process introduction anyway
       case EventType.message:
-        await sendToAll(
-          Event(
-            eventType: EventType.message,
-            data: EventMessage(
-              text: '**${ui.name}:** ${evt.data['text']}',
-              type: MessageType.text,
-            ).toJson(),
-          )..uuid = evt.uuid,
-        );
+        bool broadcast = true;
+        for (var h in handlers) {
+          if (await h(this, ui, evt)) {
+            broadcast = false;
+          }
+        }
+        if (broadcast) {
+          await sendToAll(
+            Event(
+              eventType: EventType.message,
+              data: EventMessage(
+                text: '**${ui.name}:** ${evt.data['text']}',
+                type: MessageType.text,
+              ).toJson(),
+            )..uuid = evt.uuid,
+          );
+        }
         await ui.relayEvents(
           p3p,
           (await p3p.db.getPublicKey(fingerprint: p3p.privateKey.fingerprint))!,
@@ -127,5 +136,10 @@ class P3pSSMDC {
       default:
         return false;
     }
+  }
+
+  Future<bool> isAdmin(UserInfo ui) async {
+    final List<dynamic> gm = await ssmdcdb.get('admins') ?? [];
+    return gm.contains(ui.publicKey.fingerprint);
   }
 }
