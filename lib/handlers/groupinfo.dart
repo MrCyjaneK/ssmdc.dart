@@ -48,9 +48,17 @@ admin: ${await p3pssmdc.isAdmin(ui)}
           destinationPublicKey: cui.publicKey,
           data: EventIntroduce(
             endpoint: si.endpoint,
-            fselm: await ui.fileStore.getFileStoreElement(p3pssmdc.p3p),
             publickey: p3pssmdc.p3p.privateKey.toPublic,
             username: si.name ?? 'unknown username (ir)',
+          ).toJson(),
+        ),
+      );
+      cui.addEvent(
+        p3pssmdc.p3p,
+        Event(
+          eventType: EventType.fileMetadata,
+          data: EventFileMetadata(
+            files: await ui.fileStore.getFileStoreElement(p3pssmdc.p3p),
           ).toJson(),
         ),
       );
@@ -60,7 +68,7 @@ admin: ${await p3pssmdc.isAdmin(ui)}
       Event(
         eventType: EventType.message,
         data: EventMessage(
-                text: 'Title updated to: `$title`', type: MessageType.text)
+                text: 'Title updated to: `$title`', type: MessageType.service)
             .toJson(),
       )..uuid = evt.uuid,
     );
