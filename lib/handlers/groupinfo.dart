@@ -1,10 +1,9 @@
 import 'package:p3p/p3p.dart';
 import 'package:ssmdc/ssmdc.dart';
-import 'package:uuid/uuid.dart';
 
 Future<bool> handlerCore(P3pSSMDC p3pssmdc, UserInfo ui, Event evt) async {
   if (evt.eventType != EventType.message) return false;
-  final msg = Message.fromEvent(evt, true, ui.publicKey.fingerprint);
+  final msg = Message.fromEvent(evt, ui.publicKey.fingerprint, incoming: true);
   if (msg == null) return false;
   if (msg.text.startsWith('/groupinfo')) {
     ui.addEvent(
@@ -18,7 +17,7 @@ ${p3pssmdc.p3p.privateKey.toPublic.armor()}
 ```
 
 admin: ${await p3pssmdc.isAdmin(ui)}
-''', type: MessageType.text).toJson(),
+''', type: MessageType.text),
       )..uuid = evt.uuid,
     );
     return true;
@@ -30,9 +29,8 @@ admin: ${await p3pssmdc.isAdmin(ui)}
         Event(
           eventType: EventType.message,
           data: EventMessage(
-                  text: 'Title too short or no permissions',
-                  type: MessageType.text)
-              .toJson(),
+              text: 'Title too short or no permissions',
+              type: MessageType.text),
         )..uuid = evt.uuid,
       );
       return true;
@@ -50,7 +48,7 @@ admin: ${await p3pssmdc.isAdmin(ui)}
             endpoint: si.endpoint,
             publickey: p3pssmdc.p3p.privateKey.toPublic,
             username: si.name ?? 'unknown username (ir)',
-          ).toJson(),
+          ),
         ),
       );
       cui.addEvent(
@@ -59,7 +57,7 @@ admin: ${await p3pssmdc.isAdmin(ui)}
           eventType: EventType.fileMetadata,
           data: EventFileMetadata(
             files: await ui.fileStore.getFileStoreElement(p3pssmdc.p3p),
-          ).toJson(),
+          ),
         ),
       );
     }
@@ -68,8 +66,7 @@ admin: ${await p3pssmdc.isAdmin(ui)}
       Event(
         eventType: EventType.message,
         data: EventMessage(
-                text: 'Title updated to: `$title`', type: MessageType.service)
-            .toJson(),
+            text: 'Title updated to: `$title`', type: MessageType.service),
       )..uuid = evt.uuid,
     );
     return true;

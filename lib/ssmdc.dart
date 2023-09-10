@@ -102,7 +102,7 @@ class P3pSSMDC {
             data: EventMessage(
               text: '**${ui.name}:** have joined the group!',
               type: MessageType.service,
-            ).toJson(),
+            ),
           );
           await sendToAll(
             welcomeEvt,
@@ -122,9 +122,9 @@ class P3pSSMDC {
             Event(
               eventType: EventType.message,
               data: EventMessage(
-                text: '**${ui.name}:** ${evt.data['text']}',
+                text: '**${ui.name}:** ${(evt.data as EventMessage).text}',
                 type: MessageType.text,
-              ).toJson(),
+              ),
             )..uuid = evt.uuid,
           );
         }
