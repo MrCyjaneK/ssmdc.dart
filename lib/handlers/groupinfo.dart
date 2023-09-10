@@ -1,10 +1,22 @@
 import 'package:p3p/p3p.dart';
 import 'package:ssmdc/ssmdc.dart';
+import 'package:uuid/uuid.dart';
 
 Future<bool> handlerCore(P3pSSMDC p3pssmdc, UserInfo ui, Event evt) async {
   if (evt.eventType != EventType.message) return false;
   final msg = Message.fromEvent(evt, ui.publicKey.fingerprint, incoming: true);
   if (msg == null) return false;
+  if (msg.text.startsWith('/leave')) {
+    ui.addMessage(
+        p3pssmdc.p3p,
+        Message(
+            text: "You have left the chat. Make sure to delete the chat from "
+                "your chat list or you may automatically rejoin.",
+            uuid: Uuid().v4(),
+            incoming: false,
+            roomFingerprint: ui.publicKey.fingerprint));
+    p3pssmdc.removeGroupMember(ui.publicKey.fingerprint);
+  }
   if (msg.text.startsWith('/groupinfo')) {
     ui.addEvent(
       p3pssmdc.p3p,

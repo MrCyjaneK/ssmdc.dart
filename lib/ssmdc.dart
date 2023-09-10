@@ -64,14 +64,16 @@ class P3pSSMDC {
     return ret;
   }
 
-  Future<void> addGroupMembers(String fingerprint) async {
-    print('add0');
+  Future<void> addGroupMember(String fingerprint) async {
     final List<dynamic> members = await ssmdcdb.get('members') ?? [];
-    print('add1');
     members.add(fingerprint);
-    print('add2');
     await ssmdcdb.set('members', members);
-    print('add3');
+  }
+
+  Future<void> removeGroupMember(String fingerprint) async {
+    final List<dynamic> members = await ssmdcdb.get('members') ?? [];
+    members.remove(fingerprint);
+    await ssmdcdb.set('members', members);
   }
 
   Future<void> sendToAll(Event evt) async {
@@ -96,18 +98,21 @@ class P3pSSMDC {
           if (gm.isEmpty) {
             await ssmdcdb.set('admins', [ui.publicKey.fingerprint]);
           }
-          await addGroupMembers(ui.publicKey.fingerprint);
-          final welcomeEvt = Event(
-            eventType: EventType.message,
-            data: EventMessage(
-              text: '**${ui.name}:** have joined the group!',
-              type: MessageType.service,
-            ),
-          );
-          await sendToAll(
-            welcomeEvt,
-          );
-          await ui.addEvent(p3p, evt);
+          await addGroupMember(ui.publicKey.fingerprint);
+          for (var i = 0; i < 15; i++) {
+            if (ui.name == null) await Future.delayed(Duration(seconds: 1));
+            final welcomeEvt = Event(
+              eventType: EventType.message,
+              data: EventMessage(
+                text: '**${ui.name}:** have joined the group!',
+                type: MessageType.service,
+              ),
+            );
+            await sendToAll(
+              welcomeEvt,
+            );
+            await ui.addEvent(p3p, evt);
+          }
         }
         return false; // We want to process introduction anyway
       case EventType.message:
