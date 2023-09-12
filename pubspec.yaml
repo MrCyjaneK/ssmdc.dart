@@ -2,6 +2,7 @@ name: ssmdc
 description: A sample command-line application.
 version: 1.0.0
 # repository: https://github.com/my_org/my_repo
+publish_to: none
 
 environment:
   sdk: ^3.1.0
@@ -13,6 +14,7 @@ dependencies:
   mutex: ^3.0.1
   p3p:
     path: ../p3p.dart
+  path: ^1.8.3
   uuid: ^3.0.7
 
 dev_dependencies:

@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 Future<bool> handlerCore(P3pSSMDC p3pssmdc, UserInfo ui, Event evt) async {
   if (evt.eventType != EventType.message) return false;
   final msg = Message.fromEvent(evt, ui.publicKey.fingerprint, incoming: true);
-  if (msg == null) return false;
   if (msg.text.startsWith('/leave')) {
     ui.addMessage(
         p3pssmdc.p3p,

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dart_pg/dart_pg.dart' as pgp;
 import 'package:p3p/p3p.dart';
+// ignore: implementation_imports
 import 'package:p3p/src/database/drift.dart' as db;
 
 import 'package:path/path.dart' as p;
